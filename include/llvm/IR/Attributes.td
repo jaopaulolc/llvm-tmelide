@@ -91,6 +91,12 @@ def NoImplicitFloat : EnumAttr<"noimplicitfloat">;
 /// inline=never.
 def NoInline : EnumAttr<"noinline">;
 
+/// GNU TM Extension. Functions with no read/write barriers.
+def TransactionPure : EnumAttr<"transaction_pure">;
+
+/// GNU TM Extension. Functions with read/write barriers.
+def TransactionSafe : EnumAttr<"transaction_safe">;
+
 /// Function is called early and/or often, so lazy binding isn't worthwhile.
 def NonLazyBind : EnumAttr<"nonlazybind">;
 

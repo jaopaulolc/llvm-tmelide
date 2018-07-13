@@ -289,6 +289,10 @@ std::string Attribute::getAsString(bool InAttrGrp) const {
     return "noduplicate";
   if (hasAttribute(Attribute::NoImplicitFloat))
     return "noimplicitfloat";
+  if (hasAttribute(Attribute::TransactionPure))
+    return "transaction_pure";
+  if (hasAttribute(Attribute::TransactionSafe))
+    return "transaction_safe";
   if (hasAttribute(Attribute::NoInline))
     return "noinline";
   if (hasAttribute(Attribute::NonLazyBind))
