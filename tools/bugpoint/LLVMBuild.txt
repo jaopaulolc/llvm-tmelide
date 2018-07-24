@@ -30,4 +30,5 @@ required_libraries =
  Linker
  ObjCARC
  Scalar
+ Transactify
  all-targets

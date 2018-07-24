@@ -29,5 +29,6 @@ required_libraries =
  Instrumentation
  Scalar
  ObjCARC
+ Transactify
  Passes
  all-targets

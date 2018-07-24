@@ -1,4 +1,4 @@
-;===- ./lib/Transforms/IPO/LLVMBuild.txt -----------------------*- Conf -*--===;
+;===- ./lib/Transforms/Transactify/LLVMBuild.txt ---------------*- Conf -*--===;
 ;
 ;                     The LLVM Compiler Infrastructure
 ;
@@ -17,7 +17,6 @@
 
 [component_0]
 type = Library
-name = IPO
+name = Transactify
 parent = Transforms
-library_name = ipo
-required_libraries = Analysis BitReader BitWriter Core InstCombine IRReader Linker Object ProfileData Scalar Support TransformUtils Vectorize Instrumentation Transactify
+required_libraries = Analysis Core Support TransformUtils

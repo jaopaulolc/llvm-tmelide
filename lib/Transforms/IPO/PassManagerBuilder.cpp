@@ -38,6 +38,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/SimpleLoopUnswitch.h"
 #include "llvm/Transforms/Vectorize.h"
+#include "llvm/Transforms/Transactify.h"
 
 using namespace llvm;
 
@@ -48,6 +49,10 @@ static cl::opt<bool>
 static cl::opt<bool>
     RunLoopVectorization("vectorize-loops", cl::Hidden,
                          cl::desc("Run the Loop vectorization passes"));
+
+static cl::opt<bool>
+    RunTransactify("transactify-atomic-blocks", cl::Hidden,
+                         cl::desc("Run transactify passes"));
 
 static cl::opt<bool>
 RunSLPVectorization("vectorize-slp", cl::Hidden,
@@ -165,6 +170,7 @@ PassManagerBuilder::PassManagerBuilder() {
     PrepareForThinLTO = EnablePrepareForThinLTO;
     PerformThinLTO = false;
     DivergentTarget = false;
+    Transactify = RunTransactify;
 }
 
 PassManagerBuilder::~PassManagerBuilder() {
@@ -244,6 +250,10 @@ void PassManagerBuilder::populateFunctionPassManager(
   // Add LibraryInfo if we have some.
   if (LibraryInfo)
     FPM.add(new TargetLibraryInfoWrapperPass(*LibraryInfo));
+
+  if (Transactify) {
+    FPM.add(createSlowPathCreationPass());
+  }
 
   if (OptLevel == 0) return;
 
