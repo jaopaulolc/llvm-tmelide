@@ -1124,6 +1124,8 @@ static uint64_t getRawAttributeMask(Attribute::AttrKind Val) {
   case Attribute::OptimizeForSize: return 1 << 13;
   case Attribute::StackProtect:    return 1 << 14;
   case Attribute::StackProtectReq: return 1 << 15;
+  case Attribute::TransactionPure: return 1 << 16;
+  case Attribute::TransactionSafe: return 1 << 17;
   case Attribute::Alignment:       return 31 << 16;
   case Attribute::NoCapture:       return 1 << 21;
   case Attribute::NoRedZone:       return 1 << 22;

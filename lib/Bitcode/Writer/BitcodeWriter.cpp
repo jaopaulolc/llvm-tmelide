@@ -619,6 +619,10 @@ static uint64_t getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_NO_DUPLICATE;
   case Attribute::NoImplicitFloat:
     return bitc::ATTR_KIND_NO_IMPLICIT_FLOAT;
+  case Attribute::TransactionPure:
+    return bitc::ATTR_KIND_TRANSACTION_PURE;
+  case Attribute::TransactionSafe:
+    return bitc::ATTR_KIND_TRANSACTION_SAFE;
   case Attribute::NoInline:
     return bitc::ATTR_KIND_NO_INLINE;
   case Attribute::NoRecurse:
