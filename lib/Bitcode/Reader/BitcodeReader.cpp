@@ -1124,8 +1124,6 @@ static uint64_t getRawAttributeMask(Attribute::AttrKind Val) {
   case Attribute::OptimizeForSize: return 1 << 13;
   case Attribute::StackProtect:    return 1 << 14;
   case Attribute::StackProtectReq: return 1 << 15;
-  case Attribute::TransactionPure: return 1 << 16;
-  case Attribute::TransactionSafe: return 1 << 17;
   case Attribute::Alignment:       return 31 << 16;
   case Attribute::NoCapture:       return 1 << 21;
   case Attribute::NoRedZone:       return 1 << 22;
@@ -1161,6 +1159,8 @@ static uint64_t getRawAttributeMask(Attribute::AttrKind Val) {
   case Attribute::Speculatable:    return 1ULL << 54;
   case Attribute::StrictFP:        return 1ULL << 55;
   case Attribute::SanitizeHWAddress: return 1ULL << 56;
+  case Attribute::TransactionPure: return 1ULL << 57;
+  case Attribute::TransactionSafe: return 1ULL << 58;
   case Attribute::Dereferenceable:
     llvm_unreachable("dereferenceable attribute not supported in raw format");
     break;
