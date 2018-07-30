@@ -77,6 +77,7 @@ add_llvm_library(LLVMAnalysis
   TargetLibraryInfo.cpp
   TargetTransformInfo.cpp
   Trace.cpp
+  TransactionAtomicInfo.cpp
   TypeBasedAliasAnalysis.cpp
   TypeMetadataUtils.cpp
   ScopedNoAliasAA.cpp

@@ -9,6 +9,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/Analysis/TransactionAtomicInfo.h"
 #include "llvm/Transforms/Transactify/SlowPathCreation.h"
 
 #include <set>
@@ -31,90 +32,23 @@ struct SlowPathCreation : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    return Impl.runImpl(F);
+    auto &L = getAnalysis<TransactionAtomicInfoPass>().getTransactionAtomicInfo();
+    return Impl.runImpl(F, L);
+  }
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<TransactionAtomicInfoPass>();
   }
 
 };
 
-struct DualPathInfoCollector : public InstVisitor<DualPathInfoCollector> {
-
-  struct TransactionAtomicInfo {
-    BasicBlock* fastPathEnterBB;
-    BasicBlock* fastPathExitBB;
-    BasicBlock::iterator beginSlowPathCall;
-    BasicBlock::iterator endSlowPathCall;
-    BasicBlock* transactionEntryBB;
-    std::set<BasicBlock*> transactionTerminators;
-  public:
-    TransactionAtomicInfo() {
-      fastPathEnterBB = nullptr;
-      fastPathExitBB = nullptr;
-      transactionEntryBB = nullptr;
-    }
-    BasicBlock* getFastPathEnterBB() {
-      return fastPathEnterBB;
-    }
-    BasicBlock* getFastPathExitBB() {
-      return fastPathExitBB;
-    }
-    BasicBlock::iterator getBeginSlowPathCall() {
-      return beginSlowPathCall;
-    }
-    BasicBlock::iterator getEndSlowPathCall() {
-      return endSlowPathCall;
-    }
-    BasicBlock* getTransactionEntry() {
-      return transactionEntryBB;
-    }
-    void insertTransactionTerminator(BasicBlock* TerminatorBB){
-      transactionTerminators.insert(TerminatorBB);
-    }
-    std::set<BasicBlock*>& getTransactionTerminators() {
-      return transactionTerminators;
-    }
-  };
-  std::list<TransactionAtomicInfo> listOfAtomicBlocks;
-
-  void visitCallInst(CallInst &C) {
-    if (isa<Function>(C.getCalledValue())) {
-      Function* calledFunction = static_cast<Function*>(C.getCalledValue());
-      if (calledFunction->hasName()) {
-        StringRef targetName = calledFunction->getName();
-        if (targetName.compare("__begin_tm_slow_path") == 0) {
-          TransactionAtomicInfo &TAI = listOfAtomicBlocks.back();
-          TAI.beginSlowPathCall = C.getIterator();
-        } else if (targetName.compare("__end_tm_slow_path") == 0) {
-          TransactionAtomicInfo &TAI = listOfAtomicBlocks.back();
-          TAI.endSlowPathCall = C.getIterator();
-        } else if (targetName.compare("__begin_tm_fast_path") == 0) {
-          TransactionAtomicInfo &TAI = listOfAtomicBlocks.back();
-          TAI.fastPathEnterBB = C.getParent();
-        } else if (targetName.compare("__end_tm_fast_path") == 0) {
-          TransactionAtomicInfo &TAI = listOfAtomicBlocks.back();
-          TAI.fastPathExitBB = C.getParent();
-        } else if (targetName.compare("_ITM_beginTransaction") == 0) {
-          TransactionAtomicInfo TAI;
-          TAI.transactionEntryBB = C.getParent();
-          listOfAtomicBlocks.push_back(TAI);
-        } else if (targetName.compare("_ITM_commitTransaction") == 0) {
-          TransactionAtomicInfo &TAI = listOfAtomicBlocks.back();
-          TAI.transactionTerminators.insert(C.getParent());
-        }
-      }
-    }
-  }
-public:
-  bool isListOfAtomicBlocksEmpty() {
-    return listOfAtomicBlocks.empty();
-  }
-  std::list<TransactionAtomicInfo>& getListOfAtomicBlocks() {
-    return listOfAtomicBlocks;
-  }
-};
 } // end anonymous namespace
 
 char SlowPathCreation::ID = 0;
-INITIALIZE_PASS(SlowPathCreation, "slowpathcreation",
+INITIALIZE_PASS_BEGIN(SlowPathCreation, "slowpathcreation",
+    "[GNU-TM] SlowPath Creation Pass", false, false);
+INITIALIZE_PASS_DEPENDENCY(TransactionAtomicInfoPass)
+INITIALIZE_PASS_END(SlowPathCreation, "slowpathcreation",
     "[GNU-TM] SlowPath Creation Pass", false, false);
 
 namespace llvm {
@@ -125,22 +59,21 @@ FunctionPass* createSlowPathCreationPass() {
 
 } // end namespace llvm
 
-bool SlowPathCreationPass::runImpl(Function &F) {
-  errs() << "Hello from " << F.getName() << '\n';
-  DualPathInfoCollector DPIC;
-  DPIC.visit(F);
+bool SlowPathCreationPass::runImpl(Function &F,
+    TransactionAtomicInfo &TAI) {
+  errs() << "[SlowPathCreation] Hello from " << F.getName() << '\n';
 
-  if (DPIC.isListOfAtomicBlocksEmpty()) {
+  if (TAI.isListOfAtomicBlocksEmpty()) {
     // If function does not contain _ITM_XXX call,
     // then do nothing
     return false;
   }
 
-  for (DualPathInfoCollector::TransactionAtomicInfo &TAI
-        : DPIC.getListOfAtomicBlocks()) {
+  for (TransactionAtomic &TA
+        : TAI.getListOfAtomicBlocks()) {
 
-    BasicBlock::iterator beginSlowPathCall = TAI.getBeginSlowPathCall();
-    BasicBlock::iterator endSlowPathCall = TAI.getEndSlowPathCall();
+    BasicBlock::iterator beginSlowPathCall = TA.getBeginSlowPathCall();
+    BasicBlock::iterator endSlowPathCall = TA.getEndSlowPathCall();
     BasicBlock* slowPathEnterBB = beginSlowPathCall->getParent();
     // SlowPathStmt generates a single BasicBlock
     //
@@ -162,11 +95,11 @@ bool SlowPathCreationPass::runImpl(Function &F) {
     BasicBlock* slowPathExitBB =
       slowPathEnterBB->splitBasicBlock(endSlowPathCall);
 
-    BasicBlock* fastPathEnterBB = TAI.getFastPathEnterBB();
-    BasicBlock* fastPathExitBB = TAI.getFastPathExitBB();
+    BasicBlock* fastPathEnterBB = TA.getFastPathEnterBB();
+    BasicBlock* fastPathExitBB = TA.getFastPathExitBB();
 
     std::set<BasicBlock*> &transactionTerminators =
-      TAI.getTransactionTerminators();
+      TA.getTransactionTerminators();
 
     // Mapping of fastPath instructions and basic blocks to
     // their slowPath clones
@@ -174,7 +107,7 @@ bool SlowPathCreationPass::runImpl(Function &F) {
 
     std::set<BasicBlock*> VisitedBBs;
     std::queue<BasicBlock*> WorkQueue;
-    WorkQueue.push(TAI.getFastPathEnterBB());
+    WorkQueue.push(TA.getFastPathEnterBB());
     // First we clone each fastPath basic block and only set
     // successor of slowPath entry and exit blocks
     while ( ! WorkQueue.empty() ) {
@@ -220,7 +153,7 @@ bool SlowPathCreationPass::runImpl(Function &F) {
     // One we have duplicated every fastPath block we proceed to
     // replace every slowPath User with its cloned Use value
     VisitedBBs.clear();
-    WorkQueue.push(TAI.getFastPathEnterBB());
+    WorkQueue.push(TA.getFastPathEnterBB());
     while ( ! WorkQueue.empty() ) {
       BasicBlock* currBB = WorkQueue.front();
       WorkQueue.pop();
@@ -249,7 +182,8 @@ bool SlowPathCreationPass::runImpl(Function &F) {
 
 PreservedAnalyses SlowPathCreationPass::run(Function &F,
     FunctionAnalysisManager &AM) {
-  bool Changed = runImpl(F);
+  auto &L = AM.getResult<TransactionAtomicInfoAnalysis>(F);
+  bool Changed = runImpl(F, L);
   if (!Changed) {
     return PreservedAnalyses::all();
   }

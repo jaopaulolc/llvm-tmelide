@@ -81,6 +81,7 @@ void llvm::initializeAnalysis(PassRegistry &Registry) {
   initializeLCSSAVerificationPassPass(Registry);
   initializeMemorySSAWrapperPassPass(Registry);
   initializeMemorySSAPrinterLegacyPassPass(Registry);
+  initializeTransactionAtomicInfoPassPass(Registry);
 }
 
 void LLVMInitializeAnalysis(LLVMPassRegistryRef R) {

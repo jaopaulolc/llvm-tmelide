@@ -35,6 +35,7 @@
 #include "llvm/Analysis/ScopedNoAliasAA.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TypeBasedAliasAnalysis.h"
+#include "llvm/Analysis/TransactionAtomicInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRPrintingPasses.h"
@@ -211,6 +212,7 @@ namespace {
       (void) llvm::createFloat2IntPass();
       (void) llvm::createEliminateAvailableExternallyPass();
       (void) llvm::createScalarizeMaskedMemIntrinPass();
+      (void) llvm::createTransactionAtomicInfoPass();
       (void) llvm::createSlowPathCreationPass();
       (void) llvm::createTransactionSafeCreationPass();
 

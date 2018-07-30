@@ -386,6 +386,7 @@ void initializeWriteBitcodePassPass(PassRegistry&);
 void initializeWriteThinLTOBitcodePass(PassRegistry&);
 void initializeXRayInstrumentationPass(PassRegistry&);
 void initializeMIRCanonicalizerPass(PassRegistry &);
+void initializeTransactionAtomicInfoPassPass(PassRegistry &);
 void initializeSlowPathCreationPass(PassRegistry &);
 void initializeTransactionSafeCreationPass(PassRegistry &);
 

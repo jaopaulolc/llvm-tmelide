@@ -24,6 +24,7 @@
 #include "llvm/Analysis/ScopedNoAliasAA.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TypeBasedAliasAnalysis.h"
+#include "llvm/Analysis/TransactionAtomicInfo.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
@@ -252,6 +253,7 @@ void PassManagerBuilder::populateFunctionPassManager(
     FPM.add(new TargetLibraryInfoWrapperPass(*LibraryInfo));
 
   if (Transactify) {
+    FPM.add(createTransactionAtomicInfoPass());
     FPM.add(createSlowPathCreationPass());
     FPM.add(createTransactionSafeCreationPass());
   }
