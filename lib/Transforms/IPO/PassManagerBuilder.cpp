@@ -253,6 +253,7 @@ void PassManagerBuilder::populateFunctionPassManager(
 
   if (Transactify) {
     FPM.add(createSlowPathCreationPass());
+    FPM.add(createTransactionSafeCreationPass());
   }
 
   if (OptLevel == 0) return;

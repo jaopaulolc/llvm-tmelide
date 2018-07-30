@@ -7,6 +7,8 @@ class FunctionPass;
 
 FunctionPass* createSlowPathCreationPass();
 
+FunctionPass* createTransactionSafeCreationPass();
+
 }
 
 #endif /* LLVM_TRANSFORMS_TRANSACTIFY_H */

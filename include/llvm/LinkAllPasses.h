@@ -212,6 +212,7 @@ namespace {
       (void) llvm::createEliminateAvailableExternallyPass();
       (void) llvm::createScalarizeMaskedMemIntrinPass();
       (void) llvm::createSlowPathCreationPass();
+      (void) llvm::createTransactionSafeCreationPass();
 
       (void)new llvm::IntervalPartition();
       (void)new llvm::ScalarEvolutionWrapperPass();

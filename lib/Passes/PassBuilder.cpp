@@ -149,7 +149,7 @@
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Transactify/SlowPathCreation.h"
-
+#include "llvm/Transforms/Transactify/TransactionSafeCreation.h"
 
 using namespace llvm;
 
