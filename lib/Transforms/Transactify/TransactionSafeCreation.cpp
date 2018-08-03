@@ -5,6 +5,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/Analysis/TransactionAtomicInfo.h"
 #include "llvm/Transforms/Transactify/TransactionSafeCreation.h"
 
 using namespace llvm;
@@ -27,6 +28,10 @@ struct TransactionSafeCreation : public FunctionPass {
     return Impl.runImpl(F);
   }
 
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.setPreservesCFG();
+    AU.addPreserved<TransactionAtomicInfoPass>();
+  }
 };
 
 } // end anonymous namespace
