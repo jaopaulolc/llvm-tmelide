@@ -11,6 +11,7 @@ using namespace llvm;
 void llvm::initializeTransactify(PassRegistry &Registry) {
   initializeTransactionSafeCreationPass(Registry);
   initializeSlowPathCreationPass(Registry);
+  initializeLoadStoreBarrierInsertionPass(Registry);
 }
 
 //void LLVMInitializeVectorization(LLVMPassRegistryRef R) {

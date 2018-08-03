@@ -9,6 +9,8 @@ FunctionPass* createSlowPathCreationPass();
 
 FunctionPass* createTransactionSafeCreationPass();
 
+FunctionPass* createLoadStoreBarrierInsertionPass();
+
 }
 
 #endif /* LLVM_TRANSFORMS_TRANSACTIFY_H */

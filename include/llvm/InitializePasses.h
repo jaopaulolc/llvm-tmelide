@@ -389,6 +389,7 @@ void initializeMIRCanonicalizerPass(PassRegistry &);
 void initializeTransactionAtomicInfoPassPass(PassRegistry &);
 void initializeSlowPathCreationPass(PassRegistry &);
 void initializeTransactionSafeCreationPass(PassRegistry &);
+void initializeLoadStoreBarrierInsertionPass(PassRegistry &);
 
 } // end namespace llvm
 

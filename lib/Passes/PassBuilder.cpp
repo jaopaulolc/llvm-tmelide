@@ -151,6 +151,7 @@
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Transactify/SlowPathCreation.h"
 #include "llvm/Transforms/Transactify/TransactionSafeCreation.h"
+#include "llvm/Transforms/Transactify/LoadStoreBarrierInsertion.h"
 
 using namespace llvm;
 

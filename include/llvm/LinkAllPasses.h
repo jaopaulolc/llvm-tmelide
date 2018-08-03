@@ -215,6 +215,7 @@ namespace {
       (void) llvm::createTransactionAtomicInfoPass();
       (void) llvm::createSlowPathCreationPass();
       (void) llvm::createTransactionSafeCreationPass();
+      (void) llvm::createLoadStoreBarrierInsertionPass();
 
       (void)new llvm::IntervalPartition();
       (void)new llvm::ScalarEvolutionWrapperPass();

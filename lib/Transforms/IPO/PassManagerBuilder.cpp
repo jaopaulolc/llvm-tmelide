@@ -256,6 +256,7 @@ void PassManagerBuilder::populateFunctionPassManager(
     FPM.add(createTransactionAtomicInfoPass());
     FPM.add(createSlowPathCreationPass());
     FPM.add(createTransactionSafeCreationPass());
+    FPM.add(createLoadStoreBarrierInsertionPass());
   }
 
   if (OptLevel == 0) return;

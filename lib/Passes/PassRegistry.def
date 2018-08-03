@@ -214,6 +214,7 @@ FUNCTION_PASS("view-cfg", CFGViewerPass())
 FUNCTION_PASS("view-cfg-only", CFGOnlyViewerPass())
 FUNCTION_PASS("slowpathcreation", SlowPathCreationPass())
 FUNCTION_PASS("transactionsafecreation", TransactionSafeCreationPass())
+FUNCTION_PASS("loadstorebarrierinsertion", LoadStoreBarrierInsertionPass())
 #undef FUNCTION_PASS
 
 #ifndef LOOP_ANALYSIS
