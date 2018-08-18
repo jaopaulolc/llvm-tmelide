@@ -60,6 +60,22 @@ FunctionPass* createSlowPathCreationPass() {
 
 } // end namespace llvm
 
+static void
+eraseFirstCallInst(BasicBlock* BB, StringRef calleeName) {
+  BasicBlock::iterator it = BB->begin();
+  for (; it != BB->end(); it++) {
+    if (isa<CallInst>(*it)) {
+      CallInst& C = cast<CallInst>(*it);
+      Function* calledFunction = C.getCalledFunction();
+      if (calledFunction && calledFunction->hasName() &&
+          calledFunction->getName().compare(calleeName) == 0) {
+        it->eraseFromParent();
+        break;
+      }
+    }
+  }
+}
+
 bool SlowPathCreationPass::runImpl(Function &F,
     TransactionAtomicInfo &TAI) {
   errs() << "[SlowPathCreation] Hello from " << F.getName() << '\n';
@@ -122,22 +138,15 @@ bool SlowPathCreationPass::runImpl(Function &F,
       currBB->print(errs(), true);
       if (currBB == fastPathEnterBB) {
         // remove __begin_tm_fast_path call
-        BasicBlock::iterator it;
-        it = currBBClone->begin();
-        it->eraseFromParent();
+        eraseFirstCallInst(currBBClone, "__begin_tm_fast_path");
         slowPathEnterBB->getTerminator()->setSuccessor(0, currBBClone);
         if (fastPathEnterBB == fastPathExitBB) {
           // remove __end_tm_fast_path call
-          TerminatorInst* currBBCloneTerminator = currBBClone->getTerminator();
-          it = currBBCloneTerminator->getPrevNode()->getIterator();
-          it->eraseFromParent();
+          eraseFirstCallInst(currBBClone, "__end_tm_fast_path");
         }
       } else if (currBB == fastPathExitBB) {
+        eraseFirstCallInst(currBBClone, "__end_tm_fast_path");
         TerminatorInst* currBBCloneTerminator = currBBClone->getTerminator();
-        BasicBlock::iterator it;
-        // remove __end_tm_fast_path call
-        it = currBBCloneTerminator->getPrevNode()->getIterator();
-        it->eraseFromParent();
         currBBCloneTerminator->setSuccessor(0, slowPathExitBB);
       }
 
