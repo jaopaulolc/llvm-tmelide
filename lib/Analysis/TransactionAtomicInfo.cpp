@@ -13,7 +13,8 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "transactionatomicinfo"
+#define TA_NAME "transactionatomicinfopass"
+#define DEBUG_TYPE TA_NAME
 
 namespace {
 
@@ -55,6 +56,8 @@ struct DualPathInfoCollector : public InstVisitor<DualPathInfoCollector> {
 };
 
 } // end anonymous namespace
+
+static const char ta_name[] = "[GNU-TM] Transaction Atomic Info Collector Pass";
 
 char TransactionAtomicInfoPass::ID = 0;
 INITIALIZE_PASS(TransactionAtomicInfoPass, "transactionatomicinfopass",

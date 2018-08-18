@@ -13,6 +13,7 @@
 #include "llvm/Transforms/Transactify/SlowPathCreation.h"
 
 #include <set>
+#include <unordered_set>
 #include <queue>
 
 using namespace llvm;
@@ -98,7 +99,7 @@ bool SlowPathCreationPass::runImpl(Function &F,
     BasicBlock* fastPathEnterBB = TA.getFastPathEnterBB();
     BasicBlock* fastPathExitBB = TA.getFastPathExitBB();
 
-    std::set<BasicBlock*> &transactionTerminators =
+    std::unordered_set<BasicBlock*> &transactionTerminators =
       TA.getTransactionTerminators();
 
     // Mapping of fastPath instructions and basic blocks to

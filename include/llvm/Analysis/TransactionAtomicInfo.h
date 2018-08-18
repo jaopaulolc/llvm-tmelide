@@ -3,7 +3,7 @@
 
 #include "llvm/IR/PassManager.h"
 
-#include <set>
+#include <unordered_set>
 
 namespace llvm {
 
@@ -14,7 +14,7 @@ struct TransactionAtomic {
   BasicBlock::iterator beginSlowPathCall;
   BasicBlock::iterator endSlowPathCall;
   BasicBlock* transactionEntryBB;
-  std::set<BasicBlock*> transactionTerminators;
+  std::unordered_set<BasicBlock*> transactionTerminators;
 
 public:
   TransactionAtomic() {
@@ -40,7 +40,7 @@ public:
   void insertTransactionTerminator(BasicBlock* TerminatorBB){
     transactionTerminators.insert(TerminatorBB);
   }
-  std::set<BasicBlock*>& getTransactionTerminators() {
+  std::unordered_set<BasicBlock*>& getTransactionTerminators() {
     return transactionTerminators;
   }
 };
