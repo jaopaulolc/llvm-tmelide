@@ -199,6 +199,113 @@ public:
 #undef STORE_GETTER
 };
 
+struct LogBarriers {
+
+  Module &TheModule;
+
+#define LOG_FUNC_DECL(SUFFIX) \
+  Function* Log##SUFFIX;
+
+  LOG_FUNC_DECL(U1)
+  LOG_FUNC_DECL(U2)
+  LOG_FUNC_DECL(U4)
+  LOG_FUNC_DECL(U8)
+  LOG_FUNC_DECL(F)
+  LOG_FUNC_DECL(D)
+//  LOG_FUNC_DECL(E)
+#undef LOG_FUNC_DECL
+  Function* LogB;
+
+#define ADD_LOG_DEF(TYPE, SUFFIX, NAME) \
+  Function* addDefinitionTo##SUFFIX() { \
+    LLVMContext& context = TheModule.getContext(); \
+    StringRef functionName = StringRef(NAME); \
+    FunctionType *functionType = \
+      TypeBuilder<void(const TYPE*), false>::get(context); \
+    AttributeList attrList = \
+      AttributeList() \
+        .addAttribute(context, \
+            AttributeList::FunctionIndex, Attribute::NoInline); \
+    Constant *ret = TheModule.getOrInsertFunction( \
+        functionName, functionType, attrList);  \
+    if (isa<Function>(ret)) { \
+      /*errs() <<  "successfully inserted "; \
+      errs() << functionName << " definition!" << '\n'; \
+      static_cast<Function*>(ret)->print(llvm::errs()); */\
+      return static_cast<Function*>(ret); \
+    } else { \
+      errs() <<  "failed to insert "; \
+      errs() << functionName << " definition!" << '\n'; \
+      return NULL; \
+    } \
+  }
+
+  Function* addDefinitionToLB() {
+    LLVMContext& context = TheModule.getContext();
+    StringRef functionName = StringRef("_ITM_LB");
+    FunctionType *functionType =
+      TypeBuilder<void(const void*, size_t), false>::get(context);
+    AttributeList attrList =
+      AttributeList()
+        .addAttribute(context,
+            AttributeList::FunctionIndex, Attribute::NoInline);
+    Constant *ret = TheModule.getOrInsertFunction(
+        functionName, functionType, attrList);
+    if (isa<Function>(ret)) {
+      /*errs() <<  "successfully inserted ";
+      errs() << functionName << " definition!" << '\n';
+      static_cast<Function*>(ret)->print(llvm::errs()); */
+      return static_cast<Function*>(ret);
+    } else {
+      errs() <<  "failed to insert ";
+      errs() << functionName << " definition!" << '\n';
+      return NULL;
+    }
+  }
+
+  ADD_LOG_DEF(uint8_t    , LU1, "_ITM_LU1")
+  ADD_LOG_DEF(uint16_t   , LU2, "_ITM_LU2")
+  ADD_LOG_DEF(uint32_t   , LU4, "_ITM_LU4")
+  ADD_LOG_DEF(uint64_t   , LU8, "_ITM_LU8")
+  ADD_LOG_DEF(float      , LF , "_ITM_LF")
+  ADD_LOG_DEF(double     , LD , "_ITM_LD")
+//  ADD_LOG_DEF(long double, LE , "_ITM_LE")
+#undef ADD_LOG_DEF
+
+#define INIT_LOG_FUNC_FIELD(SUFFIX) \
+  Log##SUFFIX = addDefinitionToL##SUFFIX();
+
+public:
+  LogBarriers(Module &M) : TheModule(M) {
+    INIT_LOG_FUNC_FIELD(U1)
+    INIT_LOG_FUNC_FIELD(U2)
+    INIT_LOG_FUNC_FIELD(U4)
+    INIT_LOG_FUNC_FIELD(U8)
+    INIT_LOG_FUNC_FIELD(F)
+    INIT_LOG_FUNC_FIELD(D)
+    LogB = addDefinitionToLB();
+//    INIT_LOG_FUNC_FIELD(E)
+#undef INIT_LOG_FUNC_FIELD
+  }
+
+#define LOG_GETTER(SUFFIX) \
+  Function* getLog##SUFFIX() { \
+    return Log##SUFFIX; \
+  }
+
+  LOG_GETTER(U1)
+  LOG_GETTER(U2)
+  LOG_GETTER(U4)
+  LOG_GETTER(U8)
+  LOG_GETTER(F)
+  LOG_GETTER(D)
+//  LOG_GETTER(E)
+#undef LOG_GETTER
+  Function* getLogB() {
+    return LogB;
+  }
+};
+
 } // end anonymous namespace
 
 char LoadStoreBarrierInsertion::ID = 0;
@@ -326,6 +433,57 @@ static void insertStoreBarrier(LoadStoreBarriers &LSBarriers,
   }
 }
 
+static void insertLogBarrier(LogBarriers &LBarriers, Instruction &I) {
+  StoreInst &Store = cast<StoreInst>(I);
+  Type *StoreType = Store.getValueOperand()->getType();
+  Function* Callee = nullptr;
+  std::vector<Value*> Args(1);
+  Args[0] = Store.getPointerOperand();
+  unsigned TypeSize = StoreType->getPrimitiveSizeInBits();
+  if (StoreType->isIntegerTy() ||
+      (TypeSize &&
+       !StoreType->isFloatTy() && !StoreType->isDoubleTy()) ) {
+    switch(TypeSize) {
+      case 8:
+        Callee = LBarriers.getLogU1();
+        break;
+      case 16:
+        Callee = LBarriers.getLogU2();
+        break;
+      case 32:
+        Callee = LBarriers.getLogU4();
+        break;
+      case 64:
+        Callee = LBarriers.getLogU8();
+        break;
+      default:
+        errs() << "unsupported int size '" << TypeSize << "'-bit\n";
+        break;
+    }
+  } else if (StoreType->isFloatTy()) {
+    switch(TypeSize) {
+      case 32:
+        Callee = LBarriers.getLogF();
+        break;
+      default:
+        errs() << "unsupported float size '" << TypeSize << "'-bit\n";
+        break;
+    }
+  } else if (StoreType->isDoubleTy()) {
+    switch(TypeSize) {
+      case 64:
+        Callee = LBarriers.getLogD();
+        break;
+      default:
+        errs() << "unsupported double size '" << TypeSize << "'-bit\n";
+        break;
+    }
+  }
+  if (Callee != nullptr) {
+    CallInst::Create(Callee, Args,/*name*/"", &Store);
+  }
+}
+
 bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
     TransactionAtomicInfo &TAI) {
   errs() << "[LoadStoreBarrierInsertion] Hello from " << F.getName() << '\n';
@@ -339,12 +497,16 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
   }
 
   LoadStoreBarriers LSBarriers(*F.getParent());
+  LogBarriers LBarriers(*F.getParent());
 
   std::list<Instruction*> InstructionsToDelete;
 
   if ( functionName.startswith("__transactional_clone") ) {
     for (BasicBlock &BB : F.getBasicBlockList()) {
       for (Instruction &I : BB.getInstList()) {
+        if (TAI.getTransactionLocals().count(&I) != 0) {
+          continue;
+        }
         if (isa<LoadInst>(I)) {
           insertLoadBarrier(LSBarriers, I, InstructionsToDelete);
         } else if ( isa<StoreInst>(I) ) {
@@ -372,10 +534,24 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
       VisitedBBs.insert(currBB);
       currBB->print(errs(), true);
       for (Instruction &I : currBB->getInstList()) {
-        if (isa<LoadInst>(I)) {
-          insertLoadBarrier(LSBarriers, I, InstructionsToDelete);
+        if (TAI.getTransactionLocals().count(&I) != 0) {
+          continue;
+        }
+        if ( isa<LoadInst>(I) ) {
+          // If not a thread-local
+          if (TAI.getThreadLocals().count(&I) == 0) {
+            insertLoadBarrier(LSBarriers, I, InstructionsToDelete);
+          }
         } else if ( isa<StoreInst>(I) ) {
-          insertStoreBarrier(LSBarriers, I, InstructionsToDelete);
+          if (TAI.getThreadLocals().count(&I) != 0) {
+            llvm::errs() << "LOG THIS: ";
+            I.print(llvm::errs(), true);
+            llvm::errs() << '\n';
+            insertLogBarrier(LBarriers, I);
+            continue;
+          } else {
+            insertStoreBarrier(LSBarriers, I, InstructionsToDelete);
+          }
         }
       }
 
