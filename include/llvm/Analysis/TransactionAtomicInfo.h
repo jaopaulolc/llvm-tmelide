@@ -7,6 +7,8 @@
 
 namespace llvm {
 
+class DominatorTree;
+
 struct TransactionAtomic {
 
   BasicBlock* fastPathEnterBB;
@@ -48,12 +50,20 @@ public:
 struct TransactionAtomicInfo {
 
   std::list<TransactionAtomic> listOfAtomicBlocks;
+  std::unordered_set<const Instruction*> threadLocals;
+  std::unordered_set<const Instruction*> transactionLocals;
 public:
   bool isListOfAtomicBlocksEmpty() {
     return listOfAtomicBlocks.empty();
   }
   std::list<TransactionAtomic>& getListOfAtomicBlocks() {
     return listOfAtomicBlocks;
+  }
+  std::unordered_set<const Instruction*>& getThreadLocals() {
+    return threadLocals;
+  }
+  std::unordered_set<const Instruction*>& getTransactionLocals() {
+    return transactionLocals;
   }
 };
 
@@ -73,6 +83,9 @@ public:
   TransactionAtomicInfo& getTransactionAtomicInfo() {
     return TAI;
   }
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+
 };
 
 FunctionPass* createTransactionAtomicInfoPass();
