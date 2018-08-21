@@ -13,8 +13,8 @@ struct TransactionAtomic {
 
   BasicBlock* fastPathEnterBB;
   BasicBlock* fastPathExitBB;
-  BasicBlock::iterator beginSlowPathCall;
-  BasicBlock::iterator endSlowPathCall;
+  BasicBlock* slowPathEnterBB;
+  BasicBlock* slowPathExitBB;
   BasicBlock* transactionEntryBB;
   std::unordered_set<BasicBlock*> transactionTerminators;
 
@@ -30,11 +30,11 @@ public:
   BasicBlock* getFastPathExitBB() {
     return fastPathExitBB;
   }
-  BasicBlock::iterator getBeginSlowPathCall() {
-    return beginSlowPathCall;
+  BasicBlock* getSlowPathEnterBB() {
+    return slowPathEnterBB;
   }
-  BasicBlock::iterator getEndSlowPathCall() {
-    return endSlowPathCall;
+  BasicBlock* getSlowPathExitBB() {
+    return slowPathExitBB;
   }
   BasicBlock* getTransactionEntry() {
     return transactionEntryBB;

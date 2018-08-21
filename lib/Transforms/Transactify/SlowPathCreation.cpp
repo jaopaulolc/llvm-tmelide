@@ -89,9 +89,8 @@ bool SlowPathCreationPass::runImpl(Function &F,
   for (TransactionAtomic &TA
         : TAI.getListOfAtomicBlocks()) {
 
-    BasicBlock::iterator beginSlowPathCall = TA.getBeginSlowPathCall();
-    BasicBlock::iterator endSlowPathCall = TA.getEndSlowPathCall();
-    BasicBlock* slowPathEnterBB = beginSlowPathCall->getParent();
+    BasicBlock* slowPathEnterBB = TA.getSlowPathEnterBB();
+    Instruction* endSlowPathCall = slowPathEnterBB->begin()->getNextNode();
     // SlowPathStmt generates a single BasicBlock
     //
     // ; <label>:XX:

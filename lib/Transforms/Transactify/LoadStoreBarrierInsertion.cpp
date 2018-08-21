@@ -518,8 +518,7 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
 
   for (TransactionAtomic &TA : TAI.getListOfAtomicBlocks()) {
 
-    BasicBlock::iterator beginSlowPathCall = TA.getBeginSlowPathCall();
-    BasicBlock* slowPathEnterBB = beginSlowPathCall->getParent();
+    BasicBlock* slowPathEnterBB = TA.getSlowPathEnterBB();
 
     std::unordered_set<BasicBlock*> &transactionTerminators =
       TA.getTransactionTerminators();

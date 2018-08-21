@@ -33,10 +33,10 @@ struct DualPathInfoCollector : public InstVisitor<DualPathInfoCollector> {
         StringRef targetName = calledFunction->getName();
         if (targetName.compare("__begin_tm_slow_path") == 0) {
           TransactionAtomic &TA = listOfAtomicBlocks.back();
-          TA.beginSlowPathCall = C.getIterator();
+          TA.slowPathEnterBB = C.getParent();
         } else if (targetName.compare("__end_tm_slow_path") == 0) {
           TransactionAtomic &TA = listOfAtomicBlocks.back();
-          TA.endSlowPathCall = C.getIterator();
+          TA.slowPathExitBB = C.getParent();
         } else if (targetName.compare("__begin_tm_fast_path") == 0) {
           TransactionAtomic &TA = listOfAtomicBlocks.back();
           TA.fastPathEnterBB = C.getParent();
@@ -120,9 +120,9 @@ public:
           const BasicBlock* callBB = C.getParent();
           for (TransactionAtomic& TA : TAI.getListOfAtomicBlocks()) {
             const BasicBlock* slowPathEnterBB =
-              TA.getBeginSlowPathCall()->getParent();
+              TA.getSlowPathEnterBB();
             const BasicBlock* slowPathExitBB =
-              TA.getEndSlowPathCall()->getParent();
+              TA.getSlowPathExitBB();
             if (DomTree.dominates(callBB, slowPathEnterBB)) {
               llvm::errs() << "malloc is outside of transaction\n";
               C.print(llvm::errs(), true);
