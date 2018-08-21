@@ -142,6 +142,7 @@ bool SlowPathCreationPass::runImpl(Function &F,
         if (fastPathEnterBB == fastPathExitBB) {
           // remove __end_tm_fast_path call
           eraseFirstCallInst(currBBClone, "__end_tm_fast_path");
+          currBBClone->getTerminator()->setSuccessor(0, slowPathExitBB);
         }
       } else if (currBB == fastPathExitBB) {
         eraseFirstCallInst(currBBClone, "__end_tm_fast_path");
