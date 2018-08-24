@@ -252,7 +252,7 @@ void PassManagerBuilder::populateFunctionPassManager(
   if (LibraryInfo)
     FPM.add(new TargetLibraryInfoWrapperPass(*LibraryInfo));
 
-  if (Transactify) {
+  if (OptLevel == 0 && Transactify) {
     FPM.add(createTransactionAtomicInfoPass());
     FPM.add(createSlowPathCreationPass());
     FPM.add(createTransactionSafeCreationPass());
@@ -707,6 +707,14 @@ void PassManagerBuilder::populateModulePassManager(
   // LoopSink (and other loop passes since the last simplifyCFG) might have
   // resulted in single-entry-single-exit or empty blocks. Clean up the CFG.
   MPM.add(createCFGSimplificationPass());
+
+  if (OptLevel > 0 && Transactify) {
+    MPM.add(createTransactionAtomicInfoPass());
+    MPM.add(createSlowPathCreationPass());
+    MPM.add(createCFGSimplificationPass());
+    MPM.add(createTransactionSafeCreationPass());
+    MPM.add(createLoadStoreBarrierInsertionPass());
+  }
 
   addExtensionsToPM(EP_OptimizerLast, MPM);
 }

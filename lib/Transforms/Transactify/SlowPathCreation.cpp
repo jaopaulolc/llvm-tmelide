@@ -169,6 +169,17 @@ bool SlowPathCreationPass::runImpl(Function &F,
       WorkQueue.pop();
       VisitedBBs.insert(currBB);
       BasicBlock* currBBClone = dyn_cast<BasicBlock>(VMap[currBB]);
+      BasicBlock::phi_iterator P1 = currBB->phis().begin();
+      BasicBlock::phi_iterator P2 = currBBClone->phis().begin();
+      for(; P1 != currBB->phis().end(); P1++, P2++) {
+        for (unsigned i = 0; i < P1->getNumIncomingValues(); i++) {
+          BasicBlock* IncomeBB = P1->getIncomingBlock(i);
+          if (VMap.count(IncomeBB)) {
+            BasicBlock* newIncomeBB = cast<BasicBlock>(VMap[IncomeBB]);
+            P2->setIncomingBlock(i, newIncomeBB);
+          }
+        }
+      }
       for (Instruction &I : currBBClone->getInstList()) {
         for (Use &U : I.operands()) {
           if (VMap.count(U)) {
