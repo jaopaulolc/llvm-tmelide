@@ -614,6 +614,9 @@ static void insertLoadBarrier(LoadStoreBarriers &LSBarriers,
         errs() << "unsupported double size '" << TypeSize << "'-bit\n";
         break;
     }
+  } else if (LoadType->isPointerTy()) {
+    //const PointerType * ptrType = cast<PointerType>(LoadType);
+    Callee = LSBarriers.getLoadU8();
   }
   if (Callee != nullptr) {
     CallInst *C = CallInst::Create(Callee, Args,/*name*/"", &Load);
@@ -732,6 +735,9 @@ static void insertStoreBarrier(LoadStoreBarriers &LSBarriers,
         errs() << "unsupported double size '" << TypeSize << "'-bit\n";
         break;
     }
+  } else if (StoreType->isPointerTy()) {
+    //const PointerType * ptrType = cast<PointerType>(LoadType);
+    Callee = LSBarriers.getStoreU8();
   }
   if (Callee != nullptr) {
     CallInst::Create(Callee, Args,/*name*/"", &Store);
