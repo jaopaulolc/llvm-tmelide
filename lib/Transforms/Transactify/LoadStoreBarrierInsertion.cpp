@@ -500,17 +500,23 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
   LogBarriers LBarriers(*F.getParent());
 
   std::unordered_set<Instruction*> InstructionsToDelete;
+  std::unordered_set<Instruction*> ReplacedInst;
 
   if ( functionName.startswith("__transactional_clone") ) {
     for (BasicBlock &BB : F.getBasicBlockList()) {
       for (Instruction &I : BB.getInstList()) {
+        if (ReplacedInst.count(&I) != 0) {
+          continue;
+        }
         if (TAI.getTransactionLocals().count(&I) != 0) {
           continue;
         }
         if (isa<LoadInst>(I)) {
           insertLoadBarrier(LSBarriers, I, InstructionsToDelete);
+          ReplacedInst.insert(&I);
         } else if ( isa<StoreInst>(I) ) {
           insertStoreBarrier(LSBarriers, I, InstructionsToDelete);
+          ReplacedInst.insert(&I);
         }
       }
     }
@@ -533,6 +539,9 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
       VisitedBBs.insert(currBB);
       //currBB->print(errs(), true);
       for (Instruction &I : currBB->getInstList()) {
+        if (ReplacedInst.count(&I) != 0) {
+          continue;
+        }
         if (TAI.getTransactionLocals().count(&I) != 0) {
           continue;
         }
@@ -540,13 +549,16 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
           // If not a thread-local
           if (TAI.getThreadLocals().count(&I) == 0) {
             insertLoadBarrier(LSBarriers, I, InstructionsToDelete);
+            ReplacedInst.insert(&I);
           }
         } else if ( isa<StoreInst>(I) ) {
           if (TAI.getThreadLocals().count(&I) != 0) {
             insertLogBarrier(LBarriers, I);
+            ReplacedInst.insert(&I);
             continue;
           } else {
             insertStoreBarrier(LSBarriers, I, InstructionsToDelete);
+            ReplacedInst.insert(&I);
           }
         }
       }
