@@ -326,7 +326,7 @@ FunctionPass* createLoadStoreBarrierInsertionPass() {
 } // end namespace llvm
 
 static void insertLoadBarrier(LoadStoreBarriers &LSBarriers,
-    Instruction &I, std::list<Instruction*> &InstructionsToDelete) {
+    Instruction &I, std::unordered_set<Instruction*> &InstructionsToDelete) {
   LoadInst &Load = cast<LoadInst>(I);
   Type *LoadType = Load.getType();
   Function* Callee = nullptr;
@@ -375,12 +375,12 @@ static void insertLoadBarrier(LoadStoreBarriers &LSBarriers,
   if (Callee != nullptr) {
     CallInst *C = CallInst::Create(Callee, Args,/*name*/"", &Load);
     Load.replaceAllUsesWith(C);
-    InstructionsToDelete.push_back(&Load);
+    InstructionsToDelete.insert(&Load);
   }
 }
 
 static void insertStoreBarrier(LoadStoreBarriers &LSBarriers,
-    Instruction &I, std::list<Instruction*> &InstructionsToDelete) {
+    Instruction &I, std::unordered_set<Instruction*> &InstructionsToDelete) {
   StoreInst &Store = cast<StoreInst>(I);
   Type *StoreType = Store.getValueOperand()->getType();
   Function* Callee = nullptr;
@@ -429,7 +429,7 @@ static void insertStoreBarrier(LoadStoreBarriers &LSBarriers,
   }
   if (Callee != nullptr) {
     CallInst::Create(Callee, Args,/*name*/"", &Store);
-    InstructionsToDelete.push_back(&Store);
+    InstructionsToDelete.insert(&Store);
   }
 }
 
@@ -499,7 +499,7 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
   LoadStoreBarriers LSBarriers(*F.getParent());
   LogBarriers LBarriers(*F.getParent());
 
-  std::list<Instruction*> InstructionsToDelete;
+  std::unordered_set<Instruction*> InstructionsToDelete;
 
   if ( functionName.startswith("__transactional_clone") ) {
     for (BasicBlock &BB : F.getBasicBlockList()) {
