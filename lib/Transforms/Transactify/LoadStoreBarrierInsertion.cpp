@@ -531,7 +531,7 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
       WorkQueue.pop();
 
       VisitedBBs.insert(currBB);
-      currBB->print(errs(), true);
+      //currBB->print(errs(), true);
       for (Instruction &I : currBB->getInstList()) {
         if (TAI.getTransactionLocals().count(&I) != 0) {
           continue;
@@ -543,9 +543,6 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
           }
         } else if ( isa<StoreInst>(I) ) {
           if (TAI.getThreadLocals().count(&I) != 0) {
-            llvm::errs() << "LOG THIS: ";
-            I.print(llvm::errs(), true);
-            llvm::errs() << '\n';
             insertLogBarrier(LBarriers, I);
             continue;
           } else {
