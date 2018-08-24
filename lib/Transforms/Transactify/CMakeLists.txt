@@ -3,6 +3,7 @@ add_llvm_library(LLVMTransactify
   SlowPathCreation.cpp
   TransactionSafeCreation.cpp
   LoadStoreBarrierInsertion.cpp
+  ReplaceCallInsideTransaction.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms

@@ -11,6 +11,8 @@ FunctionPass* createTransactionSafeCreationPass();
 
 FunctionPass* createLoadStoreBarrierInsertionPass();
 
+FunctionPass* createReplaceCallInsideTransactionPass();
+
 }
 
 #endif /* LLVM_TRANSFORMS_TRANSACTIFY_H */

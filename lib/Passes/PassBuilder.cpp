@@ -152,6 +152,7 @@
 #include "llvm/Transforms/Transactify/SlowPathCreation.h"
 #include "llvm/Transforms/Transactify/TransactionSafeCreation.h"
 #include "llvm/Transforms/Transactify/LoadStoreBarrierInsertion.h"
+#include "llvm/Transforms/Transactify/ReplaceCallInsideTransaction.h"
 
 using namespace llvm;
 
