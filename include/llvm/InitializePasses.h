@@ -391,6 +391,7 @@ void initializeSlowPathCreationPass(PassRegistry &);
 void initializeTransactionSafeCreationPass(PassRegistry &);
 void initializeLoadStoreBarrierInsertionPass(PassRegistry &);
 void initializeReplaceCallInsideTransactionPass(PassRegistry &);
+void initializeTransactifyCleanupPass(PassRegistry &);
 
 } // end namespace llvm
 

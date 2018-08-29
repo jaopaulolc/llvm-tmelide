@@ -4,6 +4,7 @@ add_llvm_library(LLVMTransactify
   TransactionSafeCreation.cpp
   LoadStoreBarrierInsertion.cpp
   ReplaceCallInsideTransaction.cpp
+  TransactifyCleanup.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms

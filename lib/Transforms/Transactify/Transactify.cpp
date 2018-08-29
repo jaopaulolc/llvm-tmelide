@@ -13,6 +13,7 @@ void llvm::initializeTransactify(PassRegistry &Registry) {
   initializeSlowPathCreationPass(Registry);
   initializeLoadStoreBarrierInsertionPass(Registry);
   initializeReplaceCallInsideTransactionPass(Registry);
+  initializeTransactifyCleanupPass(Registry);
 }
 
 //void LLVMInitializeVectorization(LLVMPassRegistryRef R) {

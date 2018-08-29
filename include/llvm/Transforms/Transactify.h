@@ -13,6 +13,8 @@ FunctionPass* createLoadStoreBarrierInsertionPass();
 
 FunctionPass* createReplaceCallInsideTransactionPass();
 
+FunctionPass* createTransactifyCleanupPass();
+
 }
 
 #endif /* LLVM_TRANSFORMS_TRANSACTIFY_H */

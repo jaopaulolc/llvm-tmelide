@@ -153,6 +153,7 @@
 #include "llvm/Transforms/Transactify/TransactionSafeCreation.h"
 #include "llvm/Transforms/Transactify/LoadStoreBarrierInsertion.h"
 #include "llvm/Transforms/Transactify/ReplaceCallInsideTransaction.h"
+#include "llvm/Transforms/Transactify/TransactifyCleanup.h"
 
 using namespace llvm;
 

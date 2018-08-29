@@ -258,6 +258,7 @@ void PassManagerBuilder::populateFunctionPassManager(
     FPM.add(createTransactionSafeCreationPass());
     FPM.add(createLoadStoreBarrierInsertionPass());
     FPM.add(createReplaceCallInsideTransactionPass());
+    FPM.add(createTransactifyCleanupPass());
   }
 
   if (OptLevel == 0) return;
@@ -716,6 +717,7 @@ void PassManagerBuilder::populateModulePassManager(
     MPM.add(createTransactionSafeCreationPass());
     MPM.add(createLoadStoreBarrierInsertionPass());
     MPM.add(createReplaceCallInsideTransactionPass());
+    MPM.add(createTransactifyCleanupPass());
   }
 
   addExtensionsToPM(EP_OptimizerLast, MPM);
