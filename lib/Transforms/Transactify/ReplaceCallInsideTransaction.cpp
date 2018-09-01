@@ -59,7 +59,7 @@ char ReplaceCallInsideTransaction::ID = 0;
 INITIALIZE_PASS_BEGIN(ReplaceCallInsideTransaction, DEBUG_TYPE, pass_name,
     false, false);
 INITIALIZE_PASS_DEPENDENCY(TransactionAtomicInfoPass)
-INITIALIZE_PASS_DEPENDENCY(SlowPathCreation)
+//INITIALIZE_PASS_DEPENDENCY(SlowPathCreation)
 INITIALIZE_PASS_DEPENDENCY(TransactionSafeCreation)
 INITIALIZE_PASS_END(ReplaceCallInsideTransaction, DEBUG_TYPE, pass_name, false,
     false);

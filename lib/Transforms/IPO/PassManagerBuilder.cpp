@@ -254,7 +254,8 @@ void PassManagerBuilder::populateFunctionPassManager(
 
   if (OptLevel == 0 && Transactify) {
     FPM.add(createTransactionAtomicInfoPass());
-    FPM.add(createSlowPathCreationPass());
+    //FPM.add(createSlowPathCreationPass());
+    FPM.add(createCFGSimplificationPass());
     FPM.add(createTransactionSafeCreationPass());
     FPM.add(createLoadStoreBarrierInsertionPass());
     FPM.add(createReplaceCallInsideTransactionPass());
@@ -712,7 +713,7 @@ void PassManagerBuilder::populateModulePassManager(
 
   if (OptLevel > 0 && Transactify) {
     MPM.add(createTransactionAtomicInfoPass());
-    MPM.add(createSlowPathCreationPass());
+    //MPM.add(createSlowPathCreationPass());
     MPM.add(createCFGSimplificationPass());
     MPM.add(createTransactionSafeCreationPass());
     MPM.add(createLoadStoreBarrierInsertionPass());

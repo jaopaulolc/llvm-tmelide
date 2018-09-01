@@ -10,7 +10,7 @@ using namespace llvm;
 /// Initialize all passes linked into the Transactify library.
 void llvm::initializeTransactify(PassRegistry &Registry) {
   initializeTransactionSafeCreationPass(Registry);
-  initializeSlowPathCreationPass(Registry);
+  //initializeSlowPathCreationPass(Registry);
   initializeLoadStoreBarrierInsertionPass(Registry);
   initializeReplaceCallInsideTransactionPass(Registry);
   initializeTransactifyCleanupPass(Registry);
