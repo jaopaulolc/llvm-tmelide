@@ -615,8 +615,10 @@ static void insertLoadBarrier(LoadStoreBarriers &LSBarriers,
         break;
     }
   } else if (LoadType->isPointerTy()) {
-    //const PointerType * ptrType = cast<PointerType>(LoadType);
-    Callee = LSBarriers.getLoadU8();
+    const PointerType * ptrType = cast<PointerType>(LoadType);
+    if (!ptrType->getElementType()->isFunctionTy()) {
+      Callee = LSBarriers.getLoadU8();
+    }
   }
   if (Callee != nullptr) {
     CallInst *C = CallInst::Create(Callee, Args,/*name*/"", &Load);
