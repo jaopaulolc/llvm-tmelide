@@ -6,8 +6,8 @@
 namespace llvm {
 
 struct TransactionSafeCreationPass : public PassInfoMixin<TransactionSafeCreationPass> {
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
-  bool runImpl(Function &F);
+  PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM);
+  bool runImpl(Module &M);
 };
 
 }

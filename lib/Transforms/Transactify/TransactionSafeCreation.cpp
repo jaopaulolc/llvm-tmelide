@@ -14,18 +14,18 @@ using namespace llvm;
 
 namespace {
 
-struct TransactionSafeCreation : public FunctionPass {
+struct TransactionSafeCreation : public ModulePass {
   // Pass identification, replacement for typeid
   static char ID;
 
   TransactionSafeCreationPass Impl;
 
-  TransactionSafeCreation() : FunctionPass(ID) {
+  TransactionSafeCreation() : ModulePass(ID) {
     initializeTransactionSafeCreationPass(*PassRegistry::getPassRegistry());
   }
 
-  bool runOnFunction(Function &F) override {
-    return Impl.runImpl(F);
+  bool runOnModule(Module &M) override {
+    return Impl.runImpl(M);
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
@@ -42,7 +42,7 @@ INITIALIZE_PASS(TransactionSafeCreation, "clonetransactionsafe",
 
 namespace llvm {
 
-FunctionPass* createTransactionSafeCreationPass() {
+ModulePass* createTransactionSafeCreationPass() {
   return new TransactionSafeCreation();
 }
 
@@ -54,20 +54,31 @@ bool TransactionSafeCreationPass::runImpl(Function &F) {
     return false;
   }
 
-  errs() << "Function '" << F.getName() << "' is transaction_safe"<< '\n';
+bool TransactionSafeCreationPass::runImpl(Module &M) {
 
-  ValueToValueMapTy VMap;
+  for (Function &F : M.getFunctionList()) {
 
-  Function* TxSafeClone = CloneFunction(&F, VMap);
-  TxSafeClone->setName("__transactional_clone." + F.getName());
-  TxSafeClone->removeFnAttr(Attribute::AttrKind::TransactionSafe);
+    if (F.empty()) continue;
 
+    if (!F.hasFnAttribute(Attribute::AttrKind::TransactionSafe)) {
+      continue;
+    }
+
+    errs() << "Function '" << F.getName() << "' is transaction_safe"<< '\n';
+
+    ValueToValueMapTy VMap;
+
+    Function* TxSafeClone = CloneFunction(&F, VMap);
+    Twine cloneName = "__transactional_clone." + Twine(F.getName());
+    TxSafeClone->setName(cloneName);
+    TxSafeClone->removeFnAttr(Attribute::AttrKind::TransactionSafe);
+  }
   return true;
 }
 
-PreservedAnalyses TransactionSafeCreationPass::run(Function &F,
-    FunctionAnalysisManager &AM) {
-  bool Changed = runImpl(F);
+PreservedAnalyses TransactionSafeCreationPass::run(Module &M,
+    ModuleAnalysisManager &MAM) {
+  bool Changed = runImpl(M);
   if (!Changed) {
     return PreservedAnalyses::all();
   }

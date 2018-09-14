@@ -4,10 +4,11 @@
 namespace llvm {
 
 class FunctionPass;
+class ModulePass;
 
 FunctionPass* createSlowPathCreationPass();
 
-FunctionPass* createTransactionSafeCreationPass();
+ModulePass* createTransactionSafeCreationPass();
 
 FunctionPass* createLoadStoreBarrierInsertionPass();
 
