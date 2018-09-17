@@ -90,6 +90,56 @@ replaceCall(Module* M, CallInst &C, const Function* calledFunction,
   }
 }
 
+static void
+insertGetTMCloneCall(Module* M, CallInst &C, const Value* V) {
+  LLVMContext &Context = M->getContext();
+  FunctionType* functionType = TypeBuilder<void*(void*), false>::get(Context);
+  Constant* ret = M->getOrInsertFunction( "_ITM_getTMCloneSafe", functionType);
+  if (isa<Function>(ret)) {
+    Function* getTMCloneFunction = cast<Function>(ret);
+    SmallVector<Value*, 1> Args;
+    Args.push_back(const_cast<Value*>(V));
+    CallInst *getTMCloneCall = CallInst::Create(
+        getTMCloneFunction, Args, "", &C);
+    CastInst* castInst =
+      CastInst::CreatePointerBitCastOrAddrSpaceCast(
+        getTMCloneCall, V->getType(), "", &C);
+    C.setCalledFunction(castInst);
+  } else {
+    errs() << "fatal error: failed to create _ITM_getTMCloneSafe\n";
+  }
+}
+
+static void
+replaceAndInsertCalls(Module *TheModule, Instruction &I) {
+  if (isa<CallInst>(I)) {
+    CallInst &C = cast<CallInst>(I);
+    Value *calledValue = C.getCalledValue();
+    if (isa<Function>(calledValue)) {
+      Function* calledFunction = cast<Function>(calledValue);
+      if (calledFunction && calledFunction->hasName()) {
+        StringRef name = calledFunction->getName();
+        if (calledFunction->hasFnAttribute(TxSafe)) {
+          Twine cloneName = "__transactional_clone." + name;
+          replaceCall(TheModule, C, calledFunction, cloneName);
+        } else if (name.compare("malloc") == 0 ||
+            name.compare("calloc") == 0 ||
+            name.compare("free") == 0) {
+          Twine txSafe = "_ITM_" + name;
+          replaceCall(TheModule, C, calledFunction, txSafe);
+        }
+      }
+    } else {
+      //calledValue->print(errs(), true);
+      //errs() << '\n';
+      //calledValue->getType()->print(errs(), true);
+      if (C.hasFnAttr(TxSafe)) {
+        insertGetTMCloneCall(TheModule, C, calledValue);
+      }
+    }
+  }
+}
+
 bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
     TransactionAtomicInfo &TAI) {
   errs() << "[ReplaceCallInsideTransaction] Hello from " << F.getName() << '\n';
@@ -107,25 +157,7 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
   if ( functionName.startswith("__transactional_clone") ) {
     for (BasicBlock &BB : F.getBasicBlockList()) {
       for (Instruction &I : BB.getInstList()) {
-        if (isa<CallInst>(I)) {
-          CallInst &C = cast<CallInst>(I);
-          Value *calledValue = C.getCalledValue();
-          if (isa<Function>(calledValue)) {
-            Function* calledFunction = cast<Function>(calledValue);
-            if (calledFunction->hasName()) {
-              StringRef name = calledFunction->getName();
-              if (calledFunction->hasFnAttribute(TxSafe)) {
-                Twine cloneName = "__transactional_clone." + name;
-                replaceCall(M, C, calledFunction, cloneName);
-              } else if (name.compare("malloc") == 0 ||
-                  name.compare("calloc") == 0 ||
-                  name.compare("free") == 0) {
-                Twine txSafe = "_ITM_" + name;
-                replaceCall(M, C, calledFunction, txSafe);
-              }
-            }
-          }
-        }
+        replaceAndInsertCalls(M, I);
       }
     }
   }
@@ -147,25 +179,7 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
       VisitedBBs.insert(currBB);
       //currBB->print(errs(), true);
       for (Instruction &I : currBB->getInstList()) {
-        if (isa<CallInst>(I)) {
-          CallInst &C = cast<CallInst>(I);
-          Value *calledValue = C.getCalledValue();
-          if (isa<Function>(calledValue)) {
-            Function* calledFunction = cast<Function>(calledValue);
-            if (calledFunction && calledFunction->hasName()) {
-              StringRef name = calledFunction->getName();
-              if (calledFunction->hasFnAttribute(TxSafe)) {
-                Twine cloneName = "__transactional_clone." + name;
-                replaceCall(M, C, calledFunction, cloneName);
-              } else if (name.compare("malloc") == 0 ||
-                  name.compare("calloc") == 0 ||
-                  name.compare("free") == 0) {
-                Twine txSafe = "_ITM_" + name;
-                replaceCall(M, C, calledFunction, txSafe);
-              }
-            }
-          }
-        }
+        replaceAndInsertCalls(M, I);
       }
 
       TerminatorInst* currBBTerminator = currBB->getTerminator();
