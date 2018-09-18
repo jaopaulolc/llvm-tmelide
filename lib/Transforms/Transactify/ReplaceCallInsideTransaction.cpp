@@ -166,7 +166,7 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
 
     BasicBlock* slowPathEnterBB = TA.getSlowPathEnterBB();
 
-    std::unordered_set<BasicBlock*> &transactionTerminators =
+    std::unordered_set<BasicBlock*> &Terminators =
       TA.getTransactionTerminators();
 
     std::set<BasicBlock*> VisitedBBs;
@@ -184,7 +184,8 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
 
       TerminatorInst* currBBTerminator = currBB->getTerminator();
       for (BasicBlock* currBBSucc : currBBTerminator->successors()) {
-        if (transactionTerminators.count(currBBSucc) == 0 &&
+        if (Terminators.count(currBBSucc) == 0 &&
+            Terminators.count(currBB) &&
             VisitedBBs.count(currBBSucc) == 0) {
           VisitedBBs.insert(currBBSucc);
           WorkQueue.push(currBBSucc);
