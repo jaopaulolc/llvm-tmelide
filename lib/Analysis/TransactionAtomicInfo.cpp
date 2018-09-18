@@ -34,15 +34,9 @@ struct DualPathInfoCollector : public InstVisitor<DualPathInfoCollector> {
         if (targetName.compare("__begin_tm_slow_path") == 0) {
           TransactionAtomic &TA = listOfAtomicBlocks.back();
           TA.slowPathEnterBB = C.getParent();
-        } else if (targetName.compare("__end_tm_slow_path") == 0) {
-          TransactionAtomic &TA = listOfAtomicBlocks.back();
-          TA.slowPathExitBB = C.getParent();
         } else if (targetName.compare("__begin_tm_fast_path") == 0) {
           TransactionAtomic &TA = listOfAtomicBlocks.back();
           TA.fastPathEnterBB = C.getParent();
-        } else if (targetName.compare("__end_tm_fast_path") == 0) {
-          TransactionAtomic &TA = listOfAtomicBlocks.back();
-          TA.fastPathExitBB = C.getParent();
         } else if (targetName.compare("_ITM_beginTransaction") == 0) {
           TransactionAtomic TA;
           TA.transactionEntryBB = C.getParent();
@@ -90,8 +84,8 @@ collectLocals(const Value& v,
     if (isa<LoadInst>(u) || isa<StoreInst>(u)) {
       const Instruction* inst = cast<Instruction>(u);
       S.insert(inst);
-      inst->print(llvm::errs(), true);
-      llvm::errs() << '\n';
+      //inst->print(llvm::errs(), true);
+      //llvm::errs() << '\n';
     }
   }
 }
@@ -121,16 +115,28 @@ public:
           for (TransactionAtomic& TA : TAI.getListOfAtomicBlocks()) {
             const BasicBlock* slowPathEnterBB =
               TA.getSlowPathEnterBB();
-            const BasicBlock* slowPathExitBB =
-              TA.getSlowPathExitBB();
-            if (DomTree.dominates(callBB, slowPathEnterBB)) {
+            std::unordered_set<BasicBlock*>& Terminators =
+              TA.getTransactionTerminators();
+            bool Dominates = false;
+            bool PostDominates = false;
+            for (BasicBlock* Term : Terminators) {
+              if (DomTree.dominates(callBB, Term)) {
+                Dominates = true;
+                break;
+              } else if ((PostDomTree.dominates(callBB, slowPathEnterBB) &&
+                  DomTree.dominates(callBB, Term)) ||
+                  (C.getCalledFunction() && C.getCalledFunction()->hasName() &&
+                  C.getCalledFunction()->getName().startswith("__transaction_clone"))) {
+                PostDominates = true;
+                break;
+              }
+            }
+            if (Dominates) {
               llvm::errs() << "malloc is outside of transaction\n";
-              C.print(llvm::errs(), true);
-              llvm::errs() << '\n';
+              //C.print(llvm::errs(), true);
+              //llvm::errs() << '\n';
               collectLocals(C, threadLocals);
-            } else if ((PostDomTree.dominates(callBB, slowPathEnterBB) &&
-                DomTree.dominates(callBB, slowPathExitBB)) ||
-                C.getFunction()->getName().startswith("__transaction_clone")) {
+            } else if (PostDominates) {
               llvm::errs() << "malloc is inside of transaction\n";
               collectLocals(C, transactionLocals);
             }

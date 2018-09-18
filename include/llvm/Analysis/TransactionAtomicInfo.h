@@ -12,29 +12,21 @@ class DominatorTree;
 struct TransactionAtomic {
 
   BasicBlock* fastPathEnterBB;
-  BasicBlock* fastPathExitBB;
   BasicBlock* slowPathEnterBB;
-  BasicBlock* slowPathExitBB;
   BasicBlock* transactionEntryBB;
   std::unordered_set<BasicBlock*> transactionTerminators;
 
 public:
   TransactionAtomic() {
     fastPathEnterBB = nullptr;
-    fastPathExitBB = nullptr;
+    slowPathEnterBB = nullptr;
     transactionEntryBB = nullptr;
   }
   BasicBlock* getFastPathEnterBB() {
     return fastPathEnterBB;
   }
-  BasicBlock* getFastPathExitBB() {
-    return fastPathExitBB;
-  }
   BasicBlock* getSlowPathEnterBB() {
     return slowPathEnterBB;
-  }
-  BasicBlock* getSlowPathExitBB() {
-    return slowPathExitBB;
   }
   BasicBlock* getTransactionEntry() {
     return transactionEntryBB;

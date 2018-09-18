@@ -82,15 +82,11 @@ bool TransactifyCleanupPass::runImpl(Function &F,
   for (TransactionAtomic &TA : TAI.getListOfAtomicBlocks()) {
 
     BasicBlock* slowPathEnterBB = TA.getSlowPathEnterBB();
-    BasicBlock* slowPathExitBB = TA.getSlowPathExitBB();
     BasicBlock* fastPathEnterBB = TA.getFastPathEnterBB();
-    BasicBlock* fastPathExitBB = TA.getFastPathExitBB();
 
     std::queue<BasicBlock*> WorkQueue;
     WorkQueue.push(slowPathEnterBB);
-    WorkQueue.push(slowPathExitBB);
     WorkQueue.push(fastPathEnterBB);
-    WorkQueue.push(fastPathExitBB);
     while ( ! WorkQueue.empty() ) {
       BasicBlock* currBB = WorkQueue.front();
       WorkQueue.pop();
@@ -105,9 +101,7 @@ bool TransactifyCleanupPass::runImpl(Function &F,
             if (calledFunction && calledFunction->hasName()) {
               StringRef name = calledFunction->getName();
               if (name.compare("__begin_tm_slow_path") == 0 ||
-                  name.compare("__end_tm_slow_path") == 0   ||
-                  name.compare("__begin_tm_fast_path") == 0 ||
-                  name.compare("__end_tm_fast_path") == 0) {
+                  name.compare("__begin_tm_fast_path") == 0) {
                 instructionsToDelete.insert(cast<Instruction>(&C));
               }
             }
