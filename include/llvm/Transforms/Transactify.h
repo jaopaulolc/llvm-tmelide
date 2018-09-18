@@ -6,7 +6,7 @@ namespace llvm {
 class FunctionPass;
 class ModulePass;
 
-FunctionPass* createSlowPathCreationPass();
+//FunctionPass* createSlowPathCreationPass();
 
 ModulePass* createTransactionSafeCreationPass();
 
