@@ -129,7 +129,7 @@ replaceAndInsertCalls(Module *TheModule, Instruction &I) {
           replaceCall(TheModule, C, calledFunction, txSafe);
         }
       }
-    } else {
+    } else if (C.getCalledFunction() == nullptr) {
       //calledValue->print(errs(), true);
       //errs() << '\n';
       //calledValue->getType()->print(errs(), true);
