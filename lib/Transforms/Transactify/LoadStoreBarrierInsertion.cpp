@@ -738,8 +738,10 @@ static void insertStoreBarrier(LoadStoreBarriers &LSBarriers,
         break;
     }
   } else if (StoreType->isPointerTy()) {
-    //const PointerType * ptrType = cast<PointerType>(LoadType);
-    Callee = LSBarriers.getStoreU8();
+    const PointerType * ptrType = cast<PointerType>(StoreType);
+    if (!ptrType->getElementType()->isFunctionTy()) {
+      Callee = LSBarriers.getStoreU8();
+    }
   }
   if (Callee != nullptr) {
     CallInst::Create(Callee, Args,/*name*/"", &Store);
