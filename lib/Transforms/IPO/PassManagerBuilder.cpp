@@ -252,11 +252,10 @@ void PassManagerBuilder::populateFunctionPassManager(
   if (LibraryInfo)
     FPM.add(new TargetLibraryInfoWrapperPass(*LibraryInfo));
 
-  if (OptLevel == 0 && Transactify) {
+  if (Transactify) {
     FPM.add(createTransactionAtomicInfoPass());
     //FPM.add(createSlowPathCreationPass());
     FPM.add(createCFGSimplificationPass());
-    FPM.add(createTransactionSafeCreationPass());
     FPM.add(createLoadStoreBarrierInsertionPass());
     FPM.add(createReplaceCallInsideTransactionPass());
     FPM.add(createTransactifyCleanupPass());
@@ -414,6 +413,10 @@ void PassManagerBuilder::populateModulePassManager(
 
   // Allow forcing function attributes as a debugging and tuning aid.
   MPM.add(createForceFunctionAttrsLegacyPass());
+
+  if (Transactify) {
+    MPM.add(createTransactionSafeCreationPass());
+  }
 
   // If all optimizations are disabled, just run the always-inline pass and,
   // if enabled, the function merging pass.
@@ -710,16 +713,6 @@ void PassManagerBuilder::populateModulePassManager(
   // LoopSink (and other loop passes since the last simplifyCFG) might have
   // resulted in single-entry-single-exit or empty blocks. Clean up the CFG.
   MPM.add(createCFGSimplificationPass());
-
-  if (OptLevel > 0 && Transactify) {
-    MPM.add(createTransactionAtomicInfoPass());
-    //MPM.add(createSlowPathCreationPass());
-    MPM.add(createCFGSimplificationPass());
-    MPM.add(createTransactionSafeCreationPass());
-    MPM.add(createLoadStoreBarrierInsertionPass());
-    MPM.add(createReplaceCallInsideTransactionPass());
-    MPM.add(createTransactifyCleanupPass());
-  }
 
   addExtensionsToPM(EP_OptimizerLast, MPM);
 }
