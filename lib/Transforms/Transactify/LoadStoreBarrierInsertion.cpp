@@ -16,7 +16,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "llvm/Analysis/TransactionAtomicInfo.h"
-#include "llvm/Transforms/Transactify/SlowPathCreation.h"
 #include "llvm/Transforms/Transactify/TransactionSafeCreation.h"
 #include "llvm/Transforms/Transactify/LoadStoreBarrierInsertion.h"
 
