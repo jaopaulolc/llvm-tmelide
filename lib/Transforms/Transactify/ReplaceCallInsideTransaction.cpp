@@ -184,7 +184,7 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
       TerminatorInst* currBBTerminator = currBB->getTerminator();
       for (BasicBlock* currBBSucc : currBBTerminator->successors()) {
         if (Terminators.count(currBBSucc) == 0 &&
-            Terminators.count(currBB) &&
+            Terminators.count(currBB) == 0 &&
             VisitedBBs.count(currBBSucc) == 0) {
           VisitedBBs.insert(currBBSucc);
           WorkQueue.push(currBBSucc);
