@@ -252,15 +252,6 @@ void PassManagerBuilder::populateFunctionPassManager(
   if (LibraryInfo)
     FPM.add(new TargetLibraryInfoWrapperPass(*LibraryInfo));
 
-  if (Transactify) {
-    FPM.add(createTransactionAtomicInfoPass());
-    //FPM.add(createSlowPathCreationPass());
-    FPM.add(createCFGSimplificationPass());
-    FPM.add(createLoadStoreBarrierInsertionPass());
-    FPM.add(createReplaceCallInsideTransactionPass());
-    FPM.add(createTransactifyCleanupPass());
-  }
-
   if (OptLevel == 0) return;
 
   addInitialAliasAnalysisPasses(FPM);
@@ -415,8 +406,15 @@ void PassManagerBuilder::populateModulePassManager(
   MPM.add(createForceFunctionAttrsLegacyPass());
 
   if (Transactify) {
+    MPM.add(createTransactionAtomicInfoPass());
+    //FPM.add(createSlowPathCreationPass());
     MPM.add(createTransactionSafeCreationPass());
+    MPM.add(createCFGSimplificationPass());
+    MPM.add(createLoadStoreBarrierInsertionPass());
+    MPM.add(createReplaceCallInsideTransactionPass());
+    MPM.add(createTransactifyCleanupPass());
   }
+
 
   // If all optimizations are disabled, just run the always-inline pass and,
   // if enabled, the function merging pass.
