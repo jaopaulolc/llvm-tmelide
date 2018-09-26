@@ -509,6 +509,7 @@ static void insertLoadBarrier(LoadStoreBarriers &LSBarriers,
   LoadInst &Load = cast<LoadInst>(I);
   Type *LoadType = Load.getType();
   Function* Callee = nullptr;
+  bool Cast = false;
   std::vector<Value*> Args(1);
   unsigned TypeSize = LoadType->getPrimitiveSizeInBits();
   Args[0] = Load.getPointerOperand();
@@ -617,11 +618,18 @@ static void insertLoadBarrier(LoadStoreBarriers &LSBarriers,
     const PointerType * ptrType = cast<PointerType>(LoadType);
     if (!ptrType->getElementType()->isFunctionTy()) {
       Callee = LSBarriers.getLoadU8();
+      Cast = true;
     }
   }
   if (Callee != nullptr) {
     CallInst *C = CallInst::Create(Callee, Args,/*name*/"", &Load);
-    Load.replaceAllUsesWith(C);
+    if (Cast) {
+      CastInst *BitCast = CastInst::CreateBitOrPointerCast(C, LoadType,
+          /*name*/"", &Load);
+      Load.replaceAllUsesWith(BitCast);
+    } else {
+      Load.replaceAllUsesWith(C);
+    }
     InstructionsToDelete.insert(&Load);
   }
 }
