@@ -4,6 +4,7 @@
 #include "llvm/IR/TypeBuilder.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -85,6 +86,11 @@ void registerTransactionClones(Module &TheModule,
   TMC_END->setAlignment(sizeof(void*));
   TMC_END->setSection(".tm_clone_table");
   TMC_END->setVisibility(GlobalVariable::VisibilityTypes::HiddenVisibility);
+
+  SmallVector<GlobalValue*, 2> Values;
+  Values.push_back(TMC_LIST);
+  Values.push_back(TMC_END);
+  appendToUsed(TheModule, Values);
 }
 
 } // end anonymous namespace
