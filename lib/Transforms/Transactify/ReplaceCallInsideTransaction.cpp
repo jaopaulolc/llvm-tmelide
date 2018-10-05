@@ -90,6 +90,27 @@ replaceCall(Module* M, CallInst &C, const Function* calledFunction,
 }
 
 static void
+replaceMemOpCall(Module* M, CallInst &C, const Function* calledFunction,
+    FunctionType* functionType, Twine replaceName) {
+  //errs() << "Replace name: " << replaceName.str() << '\n';
+  AttributeList AttrList = calledFunction->getAttributes();
+  Constant* ret = M->getOrInsertFunction(
+      replaceName.str(), functionType, AttrList);
+  if (isa<Function>(ret)) {
+    //C.setCalledFunction(cast<Function>(ret));
+    SmallVector<Value*, 3> Args;
+    Args.push_back(C.getArgOperand(0));
+    Args.push_back(C.getArgOperand(1));
+    Args.push_back(C.getArgOperand(2));
+    Function* F = cast<Function>(ret);
+    CallInst::Create(F, Args, /*Name*/"", &C);
+  } else {
+    errs() << "fatal error: failed to find '" <<
+      calledFunction->getName() << "' transactional_clone\n";
+  }
+}
+
+static void
 insertGetTMCloneCall(Module* M, CallInst &C, const Value* V) {
   LLVMContext &Context = M->getContext();
   FunctionType* functionType = TypeBuilder<void*(void*), false>::get(Context);
@@ -110,7 +131,8 @@ insertGetTMCloneCall(Module* M, CallInst &C, const Value* V) {
 }
 
 static void
-replaceAndInsertCalls(Module *TheModule, Instruction &I) {
+replaceAndInsertCalls(Module *TheModule, Instruction &I,
+    std::unordered_set<Instruction*>& InstructionsToDelete) {
   if (isa<CallInst>(I)) {
     CallInst &C = cast<CallInst>(I);
     Value *calledValue = C.getCalledValue();
@@ -125,6 +147,35 @@ replaceAndInsertCalls(Module *TheModule, Instruction &I) {
             name.compare("calloc") == 0 ||
             name.compare("free") == 0) {
           replaceCall(TheModule, C, calledFunction, "_ITM_" + name);
+        } else {
+          bool isIntrinsic = calledFunction->isIntrinsic();
+          bool replace = false;
+          StringRef suffix;
+          FunctionType* functionType;
+          if (name.compare("memcpy") == 0
+              || (isIntrinsic && name.contains("memcpy"))) {
+            replace = true;
+            suffix = "memcpy";
+            functionType = TypeBuilder<void(void*, const void*, size_t),
+                         false>::get(TheModule->getContext());
+          } else if (name.compare("memmove") == 0
+              || (isIntrinsic && name.contains("memmove"))) {
+            replace = true;
+            suffix = "memmove";
+            functionType = TypeBuilder<void(void*, const void*, size_t),
+                         false>::get(TheModule->getContext());
+          } else if (name.compare("memset") == 0
+              || (isIntrinsic && name.contains("memset"))) {
+            replace = true;
+            suffix = "memset";
+            functionType = TypeBuilder<void(void*, int, size_t),
+                         false>::get(TheModule->getContext());
+          }
+          if (replace) {
+            replaceMemOpCall(TheModule, C, calledFunction,functionType,
+                "_ITM_" + suffix);
+            InstructionsToDelete.insert(&C);
+          }
         }
       }
     } else if (C.getCalledFunction() == nullptr) {
@@ -152,10 +203,14 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
 
   Module *M = F.getParent();
 
+  std::unordered_set<Instruction*> InstructionsToDelete;
+
   if ( functionName.startswith("__transactional_clone") ) {
     for (BasicBlock &BB : F.getBasicBlockList()) {
       for (Instruction &I : BB.getInstList()) {
-        replaceAndInsertCalls(M, I);
+        if (InstructionsToDelete.count(&I) == 0) {
+          replaceAndInsertCalls(M, I, InstructionsToDelete);
+        }
       }
     }
   }
@@ -177,7 +232,9 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
       VisitedBBs.insert(currBB);
       //currBB->print(errs(), true);
       for (Instruction &I : currBB->getInstList()) {
-        replaceAndInsertCalls(M, I);
+        if (InstructionsToDelete.count(&I) == 0) {
+          replaceAndInsertCalls(M, I, InstructionsToDelete);
+        }
       }
 
       TerminatorInst* currBBTerminator = currBB->getTerminator();
@@ -190,6 +247,10 @@ bool ReplaceCallInsideTransactionPass::runImpl(Function &F,
         }
       }
     }
+  }
+
+  for (Instruction* I : InstructionsToDelete) {
+    I->eraseFromParent();
   }
   return true;
 }
