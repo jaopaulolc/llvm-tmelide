@@ -75,7 +75,7 @@ FunctionPass* createReplaceCallInsideTransactionPass() {
 
 static void
 replaceCall(Module* M, CallInst &C, const Function* calledFunction,
-    Twine &replaceName) {
+    Twine replaceName) {
   //errs() << "Replace name: " << replaceName.str() << '\n';
   FunctionType* functionType = calledFunction->getFunctionType();
   AttributeList AttrList = calledFunction->getAttributes();
@@ -124,8 +124,7 @@ replaceAndInsertCalls(Module *TheModule, Instruction &I) {
         } else if (name.compare("malloc") == 0 ||
             name.compare("calloc") == 0 ||
             name.compare("free") == 0) {
-          Twine txSafe = "_ITM_" + name;
-          replaceCall(TheModule, C, calledFunction, txSafe);
+          replaceCall(TheModule, C, calledFunction, "_ITM_" + name);
         }
       }
     } else if (C.getCalledFunction() == nullptr) {
