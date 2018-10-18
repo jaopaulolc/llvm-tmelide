@@ -97,6 +97,37 @@ struct LocalsInfoCollector : public InstVisitor<LocalsInfoCollector> {
   PostDominatorTree& PostDomTree;
   std::unordered_set<const Instruction*>& threadLocals;
   std::unordered_set<const Instruction*>& transactionLocals;
+
+  void localsDomAnalysis(Instruction& I, const BasicBlock* BB) {
+    for (TransactionAtomic& TA : TAI.getListOfAtomicBlocks()) {
+      const BasicBlock* slowPathEnterBB =
+        TA.getSlowPathEnterBB();
+      std::unordered_set<BasicBlock*>& Terminators =
+        TA.getTransactionTerminators();
+      bool Dominates = false;
+      bool PostDominates = false;
+      for (BasicBlock* Term : Terminators) {
+        if (DomTree.dominates(BB, slowPathEnterBB)) {
+          Dominates = true;
+          break;
+        } else if ((PostDomTree.dominates(BB, slowPathEnterBB) &&
+            DomTree.dominates(BB, Term))) {
+          PostDominates = true;
+          break;
+        }
+      }
+      if (Dominates) {
+        //llvm::errs() << "malloc is outside of transaction\n";
+        //C.print(llvm::errs(), true);
+        //llvm::errs() << '\n';
+        collectLocals(I, threadLocals);
+      } else if (PostDominates) {
+        //llvm::errs() << "malloc is inside of transaction\n";
+        collectLocals(I, transactionLocals);
+      }
+    }
+  }
+
 public:
   LocalsInfoCollector(TransactionAtomicInfo& TAI,
       DominatorTree &DT, PostDominatorTree &PDT) :
@@ -110,37 +141,12 @@ public:
       if (calledFunction->hasName()) {
         StringRef targetName = calledFunction->getName();
         if (targetName.compare("malloc") == 0 ||
-            targetName.compare("calloc") == 0) {
-          const BasicBlock* callBB = C.getParent();
-          for (TransactionAtomic& TA : TAI.getListOfAtomicBlocks()) {
-            const BasicBlock* slowPathEnterBB =
-              TA.getSlowPathEnterBB();
-            std::unordered_set<BasicBlock*>& Terminators =
-              TA.getTransactionTerminators();
-            bool Dominates = false;
-            bool PostDominates = false;
-            for (BasicBlock* Term : Terminators) {
-              if (DomTree.dominates(callBB, Term)) {
-                Dominates = true;
-                break;
-              } else if ((PostDomTree.dominates(callBB, slowPathEnterBB) &&
-                  DomTree.dominates(callBB, Term)) ||
-                  (C.getCalledFunction() && C.getCalledFunction()->hasName() &&
-                  C.getCalledFunction()->getName().startswith("__transaction_clone"))) {
-                PostDominates = true;
-                break;
-              }
-            }
-            if (Dominates) {
-              llvm::errs() << "malloc is outside of transaction\n";
-              //C.print(llvm::errs(), true);
-              //llvm::errs() << '\n';
-              collectLocals(C, threadLocals);
-            } else if (PostDominates) {
-              llvm::errs() << "malloc is inside of transaction\n";
-              collectLocals(C, transactionLocals);
-            }
-          }
+            (calledFunction->isIntrinsic() &&
+              targetName.contains("malloc")) ||
+            targetName.compare("calloc") == 0 ||
+            (calledFunction->isIntrinsic() &&
+              targetName.contains("calloc"))) {
+          localsDomAnalysis(C, C.getParent());
         }
       }
     }
@@ -171,7 +177,7 @@ bool TransactionAtomicInfoPass::runOnFunction(Function &F) {
   DualPathInfoCollector DPIC(TAI.getListOfAtomicBlocks());
   DPIC.visit(F);
   if (!TAI.getListOfAtomicBlocks().empty() ||
-      (F.hasName() && F.getName().startswith("__transaction_clone"))) {
+      (F.hasName() && F.getName().startswith("__transactional_clone"))) {
     DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     PostDominatorTree &PDT =
       getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
