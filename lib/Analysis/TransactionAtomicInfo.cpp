@@ -66,15 +66,6 @@ collectLocals(const Value& v,
       for (const User* u : user->users()) {
         if (users.count(u) == 0) {
           users.insert(u);
-          if (isa<StoreInst>(u)) {
-            const StoreInst* SI = cast<StoreInst>(u);
-            const Value* ptrOperand = SI->getPointerOperand();
-            if (isa<AllocaInst>(ptrOperand)) {
-              for (const User* w : ptrOperand->users()){
-                users.insert(w);
-              }
-            }
-          }
           changed = true;
         }
       }
