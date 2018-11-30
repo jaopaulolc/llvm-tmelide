@@ -84,12 +84,9 @@ collectLocals(const Value& v,
     if (isa<LoadInst>(u) || isa<StoreInst>(u)) {
       const Instruction* inst = cast<Instruction>(u);
       S.insert(inst);
-      //inst->print(llvm::errs(), true);
-      //llvm::errs() << '\n';
     }
   }
 }
-
 
 struct LocalsInfoCollector : public InstVisitor<LocalsInfoCollector> {
   TransactionAtomicInfo& TAI;
@@ -117,12 +114,10 @@ struct LocalsInfoCollector : public InstVisitor<LocalsInfoCollector> {
         }
       }
       if (Dominates) {
-        //llvm::errs() << "malloc is outside of transaction\n";
-        //C.print(llvm::errs(), true);
-        //llvm::errs() << '\n';
+        // malloc is outside of transaction
         collectLocals(I, threadLocals);
       } else if (PostDominates) {
-        //llvm::errs() << "malloc is inside of transaction\n";
+        // malloc is inside of transaction
         collectLocals(I, transactionLocals);
       }
     }
