@@ -54,23 +54,32 @@ static void
 collectLocals(const Value& v,
     std::unordered_set<const Instruction*>& S) {
   std::unordered_set<const User*> users;
+  std::queue<const User*> Q;
   for (const User* u : v.users()) {
-    if (users.count(u) == 0) {
-      users.insert(u);
-    }
+    Q.push(u);
   }
-  bool changed;
-  do {
-    changed = false;
-    for (const User* user : users) {
-      for (const User* u : user->users()) {
-        if (users.count(u) == 0) {
+  while ( ! Q.empty() ) {
+    const User* val = Q.front(); Q.pop();
+    for (const User* u : val->users()) {
+      if (const StoreInst* S = cast<StoreInst>(u)) {
+        if (S->getPointerOperand() == val) {
           users.insert(u);
-          changed = true;
+        }
+      }
+      if (const LoadInst* L = cast<LoadInst>(u)) {
+        if (L->getPointerOperand() == val) {
+          users.insert(u);
+          Q.push(u);
+        }
+      }
+      if (const GetElementPtrInst* GEP = cast<GetElementPtrInst>(u)) {
+        if (GEP->getPointerOperand() == val) {
+          users.insert(u);
+          Q.push(u);
         }
       }
     }
-  } while (changed);
+  }
   for (const User* u : users) {
     if (isa<LoadInst>(u) || isa<StoreInst>(u)) {
       const Instruction* inst = cast<Instruction>(u);

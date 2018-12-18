@@ -4,6 +4,7 @@
 #include "llvm/IR/PassManager.h"
 
 #include <unordered_set>
+#include <queue>
 
 namespace llvm {
 
