@@ -168,6 +168,8 @@ HANDLE_DW_TAG(0x0048, call_site, 5, DWARF)
 HANDLE_DW_TAG(0x0049, call_site_parameter, 5, DWARF)
 HANDLE_DW_TAG(0x004a, skeleton_unit, 5, DWARF)
 HANDLE_DW_TAG(0x004b, immutable_type, 5, DWARF)
+// FIXME: how to encode it?
+HANDLE_DW_TAG(0x0050, tmvar_type, 6, DWARF)
 // Vendor extensions:
 HANDLE_DW_TAG(0x4081, MIPS_loop, 0, MIPS)
 HANDLE_DW_TAG(0x4101, format_label, 0, GNU)
