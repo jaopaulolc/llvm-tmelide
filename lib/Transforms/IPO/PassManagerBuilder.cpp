@@ -405,17 +405,6 @@ void PassManagerBuilder::populateModulePassManager(
   // Allow forcing function attributes as a debugging and tuning aid.
   MPM.add(createForceFunctionAttrsLegacyPass());
 
-  if (Transactify) {
-    MPM.add(createTransactionAtomicInfoPass());
-    //FPM.add(createSlowPathCreationPass());
-    MPM.add(createTransactionSafeCreationPass());
-    MPM.add(createCFGSimplificationPass());
-    MPM.add(createLoadStoreBarrierInsertionPass());
-    MPM.add(createReplaceCallInsideTransactionPass());
-    MPM.add(createTransactifyCleanupPass());
-  }
-
-
   // If all optimizations are disabled, just run the always-inline pass and,
   // if enabled, the function merging pass.
   if (OptLevel == 0) {
@@ -441,6 +430,16 @@ void PassManagerBuilder::populateModulePassManager(
       // globals in the object file.
       MPM.add(createEliminateAvailableExternallyPass());
       MPM.add(createGlobalDCEPass());
+    }
+
+    if (Transactify) {
+      MPM.add(createTransactionAtomicInfoPass());
+      //FPM.add(createSlowPathCreationPass());
+      MPM.add(createTransactionSafeCreationPass());
+      MPM.add(createCFGSimplificationPass());
+      MPM.add(createLoadStoreBarrierInsertionPass());
+      MPM.add(createReplaceCallInsideTransactionPass());
+      MPM.add(createTransactifyCleanupPass());
     }
 
     addExtensionsToPM(EP_EnabledOnOptLevel0, MPM);
@@ -707,6 +706,16 @@ void PassManagerBuilder::populateModulePassManager(
   // passes to avoid re-sinking, but before SimplifyCFG because it can allow
   // flattening of blocks.
   MPM.add(createDivRemPairsPass());
+
+  if (Transactify) {
+    MPM.add(createTransactionAtomicInfoPass());
+    //FPM.add(createSlowPathCreationPass());
+    MPM.add(createTransactionSafeCreationPass());
+    MPM.add(createCFGSimplificationPass());
+    MPM.add(createLoadStoreBarrierInsertionPass());
+    MPM.add(createReplaceCallInsideTransactionPass());
+    MPM.add(createTransactifyCleanupPass());
+  }
 
   // LoopSink (and other loop passes since the last simplifyCFG) might have
   // resulted in single-entry-single-exit or empty blocks. Clean up the CFG.
