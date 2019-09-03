@@ -61,9 +61,11 @@ collectLocals(const Value& v,
   while ( ! Q.empty() ) {
     const User* val = Q.front(); Q.pop();
     for (const User* u : val->users()) {
+      if (users.count(u) != 0) continue;
       if (const StoreInst* S = cast<StoreInst>(u)) {
         if (S->getPointerOperand() == val) {
           users.insert(u);
+          Q.push(u);
         }
       }
       if (const LoadInst* L = cast<LoadInst>(u)) {
@@ -74,6 +76,12 @@ collectLocals(const Value& v,
       }
       if (const GetElementPtrInst* GEP = cast<GetElementPtrInst>(u)) {
         if (GEP->getPointerOperand() == val) {
+          users.insert(u);
+          Q.push(u);
+        }
+      }
+      if (const BitCastInst* BCI = cast<BitCastInst>(u)) {
+        if (BCI->llvm::User::getOperand(0) == val) {
           users.insert(u);
           Q.push(u);
         }
@@ -94,6 +102,7 @@ struct LocalsInfoCollector : public InstVisitor<LocalsInfoCollector> {
   PostDominatorTree& PostDomTree;
   std::unordered_set<const Instruction*>& threadLocals;
   std::unordered_set<const Instruction*>& transactionLocals;
+  bool isClone;
 
   void localsDomAnalysis(Instruction& I, const BasicBlock* BB) {
     for (TransactionAtomic& TA : TAI.getListOfAtomicBlocks()) {
@@ -125,10 +134,10 @@ struct LocalsInfoCollector : public InstVisitor<LocalsInfoCollector> {
 
 public:
   LocalsInfoCollector(TransactionAtomicInfo& TAI,
-      DominatorTree &DT, PostDominatorTree &PDT) :
+      DominatorTree &DT, PostDominatorTree &PDT, bool isClone) :
     TAI(TAI), DomTree(DT), PostDomTree(PDT),
     threadLocals(TAI.getThreadLocals()),
-    transactionLocals(TAI.getTransactionLocals()) {}
+    transactionLocals(TAI.getTransactionLocals()), isClone(isClone) {}
 
   void visitCallInst(CallInst &C) {
     if (isa<Function>(C.getCalledValue())) {
@@ -141,7 +150,11 @@ public:
             targetName.compare("calloc") == 0 ||
             (calledFunction->isIntrinsic() &&
               targetName.contains("calloc"))) {
-          localsDomAnalysis(C, C.getParent());
+          if (isClone) {
+            collectLocals(C, transactionLocals);
+          } else {
+            localsDomAnalysis(C, C.getParent());
+          }
         }
       }
     }
@@ -171,12 +184,13 @@ bool TransactionAtomicInfoPass::runOnFunction(Function &F) {
   TAI.getListOfAtomicBlocks().clear();
   DualPathInfoCollector DPIC(TAI.getListOfAtomicBlocks());
   DPIC.visit(F);
+  bool isClone = false;
   if (!TAI.getListOfAtomicBlocks().empty() ||
-      (F.hasName() && F.getName().startswith("__transactional_clone"))) {
+      (isClone = (F.hasName() && F.getName().startswith("__transactional_clone")))) {
     DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     PostDominatorTree &PDT =
       getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
-    LocalsInfoCollector LIC(TAI, DT, PDT);
+    LocalsInfoCollector LIC(TAI, DT, PDT, isClone);
     LIC.visit(F);
   }
   return false;
