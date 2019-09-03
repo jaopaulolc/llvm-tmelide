@@ -882,6 +882,7 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
     return false;
   }
 
+  LLVMContext& Context = F.getContext();
   LoadStoreBarriers LSBarriers(*F.getParent());
   LogBarriers LBarriers(*F.getParent());
 
@@ -891,6 +892,8 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
   if ( functionName.startswith("__transactional_clone") ) {
     for (BasicBlock &BB : F.getBasicBlockList()) {
       for (Instruction &I : BB.getInstList()) {
+        MDNode* node = I.getMetadata(Context.getMDKindID("tmlocalvar"));
+        if (node) continue;
         if (ReplacedInst.count(&I) != 0) {
           continue;
         }
@@ -925,6 +928,8 @@ bool LoadStoreBarrierInsertionPass::runImpl(Function &F,
       VisitedBBs.insert(currBB);
       //currBB->print(errs(), true);
       for (Instruction &I : currBB->getInstList()) {
+        MDNode* node = I.getMetadata(Context.getMDKindID("tmlocalvar"));
+        if (node) continue;
         if (ReplacedInst.count(&I) != 0) {
           continue;
         }
