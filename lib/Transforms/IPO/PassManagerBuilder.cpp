@@ -402,6 +402,13 @@ void PassManagerBuilder::populateModulePassManager(
     MPM.add(createSampleProfileLoaderPass(PGOSampleUse));
   }
 
+  if (Transactify) {
+    // Disabling vectorization when generating transactional code
+    // FIXME: improve STM support for vector load/stores
+    LoopVectorize = false;
+    SLPVectorize = false;
+  }
+
   // Allow forcing function attributes as a debugging and tuning aid.
   MPM.add(createForceFunctionAttrsLegacyPass());
 
