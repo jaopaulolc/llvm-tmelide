@@ -626,6 +626,16 @@ void PassManagerBuilder::populateModulePassManager(
   // llvm.loop.distribute=true or when -enable-loop-distribute is specified.
   MPM.add(createLoopDistributePass());
 
+  if (Transactify) {
+    MPM.add(createTransactionAtomicInfoPass());
+    //FPM.add(createSlowPathCreationPass());
+    MPM.add(createTransactionSafeCreationPass());
+    MPM.add(createCFGSimplificationPass());
+    MPM.add(createLoadStoreBarrierInsertionPass());
+    MPM.add(createReplaceCallInsideTransactionPass());
+    MPM.add(createTransactifyCleanupPass());
+  }
+
   MPM.add(createLoopVectorizePass(DisableUnrollLoops, LoopVectorize));
 
   // Eliminate loads by forwarding stores from the previous iteration to loads
@@ -713,16 +723,6 @@ void PassManagerBuilder::populateModulePassManager(
   // passes to avoid re-sinking, but before SimplifyCFG because it can allow
   // flattening of blocks.
   MPM.add(createDivRemPairsPass());
-
-  if (Transactify) {
-    MPM.add(createTransactionAtomicInfoPass());
-    //FPM.add(createSlowPathCreationPass());
-    MPM.add(createTransactionSafeCreationPass());
-    MPM.add(createCFGSimplificationPass());
-    MPM.add(createLoadStoreBarrierInsertionPass());
-    MPM.add(createReplaceCallInsideTransactionPass());
-    MPM.add(createTransactifyCleanupPass());
-  }
 
   // LoopSink (and other loop passes since the last simplifyCFG) might have
   // resulted in single-entry-single-exit or empty blocks. Clean up the CFG.
